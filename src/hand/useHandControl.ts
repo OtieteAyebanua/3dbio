@@ -38,6 +38,8 @@ export async function startHandPipeline(
   });
   let tracker: HandTracker;
   try {
+    // The camera feed is only for tracking: never let the browser pop it out as picture-in-picture.
+    video.disablePictureInPicture = true;
     video.srcObject = stream;
     await video.play();
     tracker = await HandTracker.create();

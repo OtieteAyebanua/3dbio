@@ -53,7 +53,8 @@ export default function App() {
         </div>
       )}
       {/* Tracking reads from this video; it's never shown. */}
-      <video ref={videoRef} className="camera" playsInline muted />
+      {/* Never picture-in-picture: Chrome offers to pop a playing video out when you leave the tab. */}
+      <video ref={videoRef} className="camera" playsInline muted disablePictureInPicture />
       {/* The 3D hand is drawn here; it never blocks the page. */}
       <canvas ref={canvasRef} className="hand-overlay" />
     </>
