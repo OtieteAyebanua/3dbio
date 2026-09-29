@@ -1,4 +1,4 @@
-# multiHCI
+# View3d
 
 A soft white 3D studio for exploring models made of parts — like a heart — with your hand
 through the webcam. Point at a part to see its name, tap to select it, grab to turn the model,
