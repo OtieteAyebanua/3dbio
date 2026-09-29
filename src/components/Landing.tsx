@@ -55,7 +55,7 @@ export function Landing({ onChoose, camera, hands }: Props) {
     <main className="landing">
       <nav className="landing-nav">
         <span className="landing-brand">
-          <span className="landing-logo" aria-hidden />
+          <img className="landing-logo" src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" />
           View3d
         </span>
         <HandStatus camera={camera} hands={hands} />

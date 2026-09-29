@@ -498,10 +498,9 @@ body {
   color: #36312c;
 }
 .landing-logo {
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   border-radius: 7px;
-  background: conic-gradient(from 200deg, #d9785f, #c9a27a, #7d8fc4, #d9785f);
   box-shadow: 0 4px 12px rgba(160, 90, 60, 0.25);
 }
 .hand-status {
