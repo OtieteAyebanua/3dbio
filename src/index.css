@@ -447,3 +447,350 @@ body {
 .model-picker li button[data-hand-hover] {
   background: rgba(201, 162, 122, 0.24);
 }
+
+.guide-retry {
+  margin-top: 10px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(201, 162, 122, 0.22);
+  color: #4d463f;
+  font: inherit;
+  cursor: pointer;
+}
+.guide-retry:hover,
+.guide-retry[data-hand-hover] {
+  background: rgba(201, 162, 122, 0.4);
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Landing page */
+.landing {
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(18px, 3.2vh, 36px);
+  padding: 20px 24px 24px;
+  box-sizing: border-box;
+  background:
+    radial-gradient(ellipse 60% 45% at 50% 30%, #f8f5f0 0%, rgba(248, 245, 240, 0) 70%),
+    radial-gradient(ellipse 50% 40% at 15% 85%, rgba(232, 196, 176, 0.35) 0%, rgba(232, 196, 176, 0) 70%),
+    radial-gradient(ellipse 50% 40% at 85% 85%, rgba(170, 186, 222, 0.3) 0%, rgba(170, 186, 222, 0) 70%),
+    #e9e5de;
+}
+.landing-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 1080px;
+}
+.landing-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+  color: #36312c;
+}
+.landing-logo {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  background: conic-gradient(from 200deg, #d9785f, #c9a27a, #7d8fc4, #d9785f);
+  box-shadow: 0 4px 12px rgba(160, 90, 60, 0.25);
+}
+.hand-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: rgba(255, 252, 247, 0.7);
+  box-shadow: 0 4px 14px rgba(90, 70, 50, 0.08);
+  font-size: 13px;
+  color: #5c554d;
+}
+.hand-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #c9b8a6;
+}
+.hand-status.on .hand-status-dot {
+  background: #4caf7a;
+  box-shadow: 0 0 0 4px rgba(76, 175, 122, 0.18);
+}
+.hand-status.wait .hand-status-dot {
+  background: #d9a441;
+  animation: guide-pulse 1.4s ease-in-out infinite;
+}
+.landing-header {
+  text-align: center;
+  max-width: 760px;
+  margin-top: 0;
+}
+.landing-kicker {
+  margin: 0 0 14px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #a08466;
+}
+.landing-header h1 {
+  margin: 0;
+  font-size: clamp(30px, min(4.6vw, 6.2vh), 54px);
+  line-height: 1.04;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: #2f2a26;
+}
+.landing-header h1 em {
+  font-style: normal;
+  background: linear-gradient(100deg, #b9533f 10%, #c9a27a 50%, #5b6fa8 90%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.landing-lead {
+  margin: 14px auto 0;
+  max-width: 600px;
+  font-size: 16px;
+  line-height: 1.55;
+  color: #6f665c;
+}
+.landing-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 28px;
+  width: 100%;
+  max-width: 1000px;
+}
+.landing-card {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  border: none;
+  border-radius: 28px;
+  overflow: hidden;
+  background: rgba(255, 252, 247, 0.75);
+  box-shadow: 0 20px 50px rgba(90, 70, 50, 0.12), inset 0 0 0 1px rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(12px);
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
+}
+.landing-card:focus {
+  outline: none;
+}
+.landing-card:hover,
+.landing-card.active,
+.landing-card[data-hand-hover] {
+  transform: translateY(-8px);
+  box-shadow: 0 32px 70px rgba(90, 70, 50, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.95);
+}
+.landing-art {
+  position: relative;
+  height: clamp(150px, 27vh, 280px);
+}
+.landing-card.anatomy .landing-art {
+  background: radial-gradient(circle at 50% 55%, #fbeee6 0%, #f1dccf 50%, #e7cab8 100%);
+}
+.landing-card.nasa .landing-art {
+  background: radial-gradient(ellipse at 50% 120%, #b86a4a 0%, #6b3b35 18%, #2a2b45 45%, #151a2c 100%);
+}
+.landing-art .model-preview {
+  position: absolute !important;
+  inset: 0;
+  pointer-events: none;
+}
+/* A scatter of stars behind the rover */
+.stars {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1.5px 1.5px at 12% 20%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 28% 62%, #dfe6ff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 44% 14%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 63% 38%, #cfd8ff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 78% 18%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 88% 52%, #dfe6ff 50%, transparent 51%),
+    radial-gradient(1px 1px at 8% 48%, #cfd8ff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 94% 8%, #fff 50%, transparent 51%);
+  opacity: 0.8;
+}
+.landing-text {
+  padding: 18px 26px 22px;
+}
+.landing-tag {
+  margin: 0 0 6px !important;
+  font-size: 12px !important;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.anatomy .landing-tag {
+  color: #b9533f !important;
+}
+.nasa .landing-tag {
+  color: #4c5f96 !important;
+}
+.landing-text h2 {
+  margin: 0 0 8px;
+  font-size: 24px;
+  letter-spacing: -0.01em;
+  color: #2f2a26;
+}
+.landing-text p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #6f665c;
+}
+.landing-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  font-size: 13px;
+}
+.landing-meta span:not(.landing-go) {
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: rgba(120, 100, 80, 0.08);
+  color: #6f665c;
+}
+.landing-go {
+  margin-left: auto;
+  font-size: 15px;
+  font-weight: 600;
+  transition: transform 0.3s ease;
+}
+.anatomy .landing-go {
+  color: #b9533f;
+}
+.nasa .landing-go {
+  color: #4c5f96;
+}
+.landing-card:hover .landing-go,
+.landing-card.active .landing-go,
+.landing-card[data-hand-hover] .landing-go {
+  transform: translateX(4px);
+}
+.landing-gestures {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 26px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+  color: #7a7066;
+}
+.landing-gestures li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.landing-gestures b {
+  color: #4d463f;
+}
+.landing-gestures svg {
+  width: 22px;
+  height: 22px;
+  padding: 7px;
+  border-radius: 50%;
+  background: rgba(255, 252, 247, 0.75);
+  box-shadow: 0 4px 12px rgba(90, 70, 50, 0.08);
+  fill: none;
+  stroke: #a08466;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* The Home button and the "Body parts" dropdown sit together under the model's name. */
+.top-actions {
+  position: fixed;
+  top: 92px;
+  left: 28px;
+  z-index: 10;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.top-actions .model-picker {
+  position: static;
+}
+.home-button {
+  padding: 9px 16px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 252, 247, 0.7);
+  box-shadow: 0 6px 20px rgba(90, 70, 50, 0.1);
+  backdrop-filter: blur(6px);
+  color: #4d463f;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.home-button:focus {
+  outline: none;
+}
+.home-button:hover,
+.home-button[data-hand-hover] {
+  background: rgba(201, 162, 122, 0.24);
+}
+
+/* The label under the 3D loader */
+.model-loader {
+  position: fixed;
+  left: 50%;
+  top: 69%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  width: 220px;
+  text-align: center;
+  color: #5c554d;
+  font-size: 14px;
+  user-select: none;
+}
+.model-loader p {
+  margin: 0 0 10px;
+  white-space: nowrap;
+}
+.model-loader b {
+  color: #36312c;
+}
+.model-loader-bar {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(120, 100, 80, 0.14);
+  overflow: hidden;
+}
+.model-loader-bar span {
+  display: block;
+  width: 40%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #d9785f, #c9a27a, #7d8fc4);
+  animation: model-loader-slide 1.3s ease-in-out infinite;
+}
+@keyframes model-loader-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(250%);
+  }
+}

@@ -1,159 +1,49 @@
-import { useCallback, useEffect, useState } from "react";
-import { PartInfo } from "./components/PartInfo";
-import { GuidePanel } from "./guide/GuidePanel";
-import { ModelPicker } from "./components/ModelPicker";
+import { useEffect, useState } from "react";
+import { ANATOMY, NASA } from "./collections";
+import { Explorer } from "./Explorer";
+import { Landing, type Destination } from "./components/Landing";
 import { useHandControl } from "./hand/useHandControl";
-import { prettyName } from "./scene/models/buildParts";
-import type { PartModel } from "./scene/models/types";
-import { Studio } from "./scene/Studio";
 
-/** The models the arrows step through (files in public/models). The first one shows on load. */
-const MODELS = [
-  { file: "heart.glb", name: "Heart" },
-  { file: "lungs.glb", name: "Lungs" },
-  { file: "liver.glb", name: "Liver" },
-  { file: "abdomen.glb", name: "Stomach, spleen, pancreas & kidneys" },
-  { file: "brain.glb", name: "Brain" },
-].map((m) => ({ url: `${import.meta.env.BASE_URL}models/${m.file}`, name: m.name }));
-const DEFAULT_MODEL = MODELS[0];
+type Screen = "home" | Destination;
+
+/** The screen named in the address (#anatomy, #nasa), so reloading or the back button keeps your place. */
+function screenFromHash(): Screen {
+  const hash = window.location.hash.slice(1);
+  return hash === "anatomy" || hash === "nasa" ? hash : "home";
+}
 
 /**
- * A soft white 3D studio for exploring a model part by part, with the see-through hand.
- * The camera and hand control start on load.
+ * The app: a landing page to choose what to explore, and the explorers themselves. The camera
+ * and hand control start on load and stay on across screens.
  */
 export default function App() {
-  const { videoRef, canvasRef, status, error, setControl, start } = useHandControl();
-  const [source, setSource] = useState(DEFAULT_MODEL);
-  // Where we are in MODELS (a dropped file keeps this, so the arrows carry on from there).
-  const [modelIndex, setModelIndex] = useState(0);
-  const [model, setModel] = useState<PartModel | null>(null);
-  const [loadError, setLoadError] = useState("");
-  const [explode, setExplode] = useState(0);
-  const [hovered, setHovered] = useState<string | null>(null);
-  const [selected, setSelected] = useState<string | null>(null);
+  const { videoRef, canvasRef, status, error, setControl, start, stats } = useHandControl();
+  const [screen, setScreen] = useState<Screen>(screenFromHash);
 
   useEffect(() => {
     setControl(true);
     void start();
   }, [start, setControl]);
 
-  /** Show a different model, starting assembled with nothing selected. */
-  const openModel = useCallback((next: typeof DEFAULT_MODEL) => {
-    setSource(next);
-    setModel(null);
-    setLoadError("");
-    setExplode(0);
-    setHovered(null);
-    setSelected(null);
+  useEffect(() => {
+    const onHash = () => setScreen(screenFromHash());
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
   }, []);
 
-  /** Show the model at `index` in MODELS. */
-  const pick = useCallback(
-    (index: number) => {
-      setModelIndex(index);
-      openModel(MODELS[index]);
-    },
-    [openModel],
-  );
-
-  /** Step to the previous (-1) or next (+1) model, wrapping around. */
-  const step = useCallback(
-    (by: number) => pick((modelIndex + by + MODELS.length) % MODELS.length),
-    [modelIndex, pick],
-  );
-
-  // A trackpad pinch would zoom the whole page; here it scatters or zooms the model instead.
-  useEffect(() => {
-    const noPageZoom = (e: WheelEvent) => {
-      if (e.ctrlKey) e.preventDefault();
-    };
-    window.addEventListener("wheel", noPageZoom, { passive: false });
-    return () => window.removeEventListener("wheel", noPageZoom);
-  }, []);
-
-  // The keyboard's arrow keys work too.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "ArrowLeft") step(-1);
-      if (e.key === "ArrowRight") step(1);
-      if (e.key === "Escape") setSelected(null);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [step]);
-
-  // Drag a .glb file onto the page to view it.
-  useEffect(() => {
-    const over = (e: DragEvent) => e.preventDefault();
-    const drop = (e: DragEvent) => {
-      e.preventDefault();
-      const file = e.dataTransfer?.files[0];
-      if (!file) return;
-      if (!file.name.toLowerCase().endsWith(".glb")) {
-        setLoadError("That isn't a .glb file. Export your model as .glb (binary glTF) and drop it again.");
-        return;
-      }
-      openModel({ url: URL.createObjectURL(file), name: prettyName(file.name.replace(/\.glb$/i, ""), 0) });
-    };
-    window.addEventListener("dragover", over);
-    window.addEventListener("drop", drop);
-    return () => {
-      window.removeEventListener("dragover", over);
-      window.removeEventListener("drop", drop);
-    };
-  }, [openModel]);
-
-  const onModelError = useCallback(
-    (message: string) =>
-      setLoadError(
-        source === DEFAULT_MODEL
-          ? "No model yet — put your model at public/models/heart.glb, or drag a .glb file onto this page."
-          : `Couldn't open that model: ${message}`,
-      ),
-    [source],
-  );
+  const go = (next: Screen) => {
+    window.location.hash = next === "home" ? "" : next;
+    setScreen(next);
+  };
 
   return (
     <>
-      <Studio
-        modelUrl={source.url}
-        modelName={source.name}
-        model={model}
-        onModelLoaded={setModel}
-        onModelError={onModelError}
-        explode={explode}
-        setExplode={setExplode}
-        hovered={hovered}
-        setHovered={setHovered}
-        selected={selected}
-        setSelected={setSelected}
-      />
-      {/* Slightly darker edges focus the eye inward */}
-      <div className="vignette" />
-      {model ? (
-        <>
-          <PartInfo model={model} selected={selected} explode={explode} onClose={() => setSelected(null)} />
-          <GuidePanel model={model} selected={selected} />
-        </>
+      {screen === "home" ? (
+        <Landing onChoose={go} camera={status} hands={stats.hands} />
       ) : (
-        !loadError && (
-          <header className="model-title">
-            <h1>{source.name}</h1>
-            <p>Loading…</p>
-          </header>
-        )
+        // A new key per collection, so switching starts that explorer afresh.
+        <Explorer key={screen} collection={screen === "nasa" ? NASA : ANATOMY} onHome={() => go("home")} />
       )}
-      <ModelPicker models={MODELS} current={modelIndex} onPick={pick} />
-      {/* Step between models; tap them with the hand like any button */}
-      <button className="model-arrow left" onClick={() => step(-1)} aria-label={`Previous: ${MODELS[(modelIndex + MODELS.length - 1) % MODELS.length].name}`}>
-        <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" /></svg>
-        <span>{MODELS[(modelIndex + MODELS.length - 1) % MODELS.length].name}</span>
-      </button>
-      <button className="model-arrow right" onClick={() => step(1)} aria-label={`Next: ${MODELS[(modelIndex + 1) % MODELS.length].name}`}>
-        <svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" /></svg>
-        <span>{MODELS[(modelIndex + 1) % MODELS.length].name}</span>
-      </button>
-      {loadError && <p className="empty-state">{loadError}</p>}
 
       {status === "starting" && <p className="message">Allow the camera to begin…</p>}
       {status === "error" && (
@@ -164,7 +54,7 @@ export default function App() {
       )}
       {/* Tracking reads from this video; it's never shown. */}
       <video ref={videoRef} className="camera" playsInline muted />
-      {/* The see-through hand is drawn here; it never blocks the page. */}
+      {/* The 3D hand is drawn here; it never blocks the page. */}
       <canvas ref={canvasRef} className="hand-overlay" />
     </>
   );

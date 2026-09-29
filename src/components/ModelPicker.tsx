@@ -1,16 +1,18 @@
 /**
- * A dropdown of every body part (model) that can be explored. Built from buttons rather than
+ * A dropdown of every model in the collection (e.g. every body part) that can be explored. Built from buttons rather than
  * a <select>, because the browser's own dropdown list can't be opened by the hand's pointer.
  */
 import { useEffect, useRef, useState } from "react";
 
 interface Props {
+  /** What the list is called, e.g. "Body parts". */
+  label: string;
   models: { name: string }[];
   current: number;
   onPick: (index: number) => void;
 }
 
-export function ModelPicker({ models, current, onPick }: Props) {
+export function ModelPicker({ label, models, current, onPick }: Props) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
 
@@ -27,7 +29,7 @@ export function ModelPicker({ models, current, onPick }: Props) {
   return (
     <div className={`model-picker ${open ? "open" : ""}`} ref={root}>
       <button className="model-picker-button" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
-        Body parts
+        {label}
         <svg viewBox="0 0 24 24" aria-hidden>
           <path d="M6 9l6 6 6-6" />
         </svg>

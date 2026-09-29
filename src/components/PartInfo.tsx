@@ -34,7 +34,7 @@ export function PartInfo({ model, selected, explode, onClose }: Props) {
       {part && (
         // Outside the card, which lets the hand pass through it; this one must be tappable.
         <button className="back-button" onClick={onClose}>
-          ← Whole {model.name.toLowerCase()}
+          ← Back to the whole model
         </button>
       )}
 
