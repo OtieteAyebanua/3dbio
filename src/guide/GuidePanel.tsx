@@ -12,6 +12,9 @@ interface Props {
   selected: string | null;
 }
 
+/** Matches the compact layout in index.css. */
+const COMPACT_SCREEN = "(max-width: 640px), (max-height: 480px)";
+
 function spoken(e: Explanation): string {
   const facts = e.funFacts.length ? ` Here are some fun facts. ${e.funFacts.join(" ")}` : "";
   return `${e.title}. ${e.summary} ${e.role}${facts}`;
@@ -21,7 +24,8 @@ export function GuidePanel({ model, selected }: Props) {
   const part = model.parts.find((p) => p.id === selected) ?? null;
   const partNames = useMemo(() => model.parts.map((p) => p.name), [model]);
   const [state, retry] = useExplanation(model.name, part?.name ?? null, partNames);
-  const [open, setOpen] = useState(true);
+  // Open to begin with, except on a phone (or phone on its side), where it would cover the model.
+  const [open, setOpen] = useState(() => !window.matchMedia(COMPACT_SCREEN).matches);
   const [voice, setVoice] = useState(false);
 
   // With the voice on, read out each new explanation as it arrives.

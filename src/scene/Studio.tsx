@@ -11,7 +11,7 @@
  *   four-finger up-down / wheel  scatter the parts apart or bring them together;
  *                                while a part is selected, zoom in or out on it
  *   ring finger / right-click scatter everything at once, or reassemble
- *   both hands grab, pull apart / push together (or trackpad pinch)
+ *   both hands grab, pull apart / push together (or trackpad / touchscreen pinch)
  *                                scatter / assemble; while a part is selected, zoom in / out
  */
 import { ContactShadows, useGLTF } from "@react-three/drei";
@@ -60,6 +60,11 @@ const ZOOM_RANGE = [0.4, 3];
 const MIN_FOCUS_RADIUS = 0.05;
 /** The direction the camera looks at a selected part from: from the front, slightly above. */
 const FOCUS_VIEW = new Vector3(0, 0.12, 1).normalize();
+/** On a tall, narrow screen (a phone) the camera steps back so the model's sides aren't cut off. */
+const NARROW_ASPECT = 0.72;
+const MAX_STEP_BACK = 1.8;
+/** A two-finger pinch on a touchscreen, in the wheel's pixels per pixel the fingers move. */
+const PINCH_SPEED = 2.5;
 
 function Floor() {
   return (
@@ -94,22 +99,24 @@ function CameraRig({ focus, zoom }: { focus: ModelPart | null; zoom: number }) {
   const look = useRef(new Vector3(0, MODEL_Y - 0.1, 0));
   const goal = useRef({ position: new Vector3(), look: new Vector3() });
 
-  useFrame(({ camera, pointer, clock }, delta) => {
+  useFrame(({ camera, pointer, clock, size }, delta) => {
     const { position, look: lookGoal } = goal.current;
     const holder = focus?.object.parent; // the part's group, which moves as the model turns and scatters
+    const stepBack = MathUtils.clamp(NARROW_ASPECT / (size.width / size.height), 1, MAX_STEP_BACK);
     if (focus && holder) {
       lookGoal.fromArray(focus.center);
       holder.localToWorld(lookGoal);
       // Far enough back that the whole part fits in view, then zoomed.
       const halfFov = MathUtils.degToRad((camera as PerspectiveCamera).fov / 2);
-      const distance = ((Math.max(focus.radius, MIN_FOCUS_RADIUS) / Math.sin(halfFov)) * 1.25) / zoom;
+      const distance = ((Math.max(focus.radius, MIN_FOCUS_RADIUS) / Math.sin(halfFov)) * 1.25 * stepBack) / zoom;
       position.copy(FOCUS_VIEW).multiplyScalar(distance).add(lookGoal);
       position.x += pointer.x * distance * 0.08;
       position.y += pointer.y * distance * 0.04;
     } else {
       const drift = Math.sin(clock.elapsedTime * 0.15) * 0.06;
-      position.set(CAMERA.x + pointer.x * PARALLAX.x + drift, CAMERA.y + pointer.y * PARALLAX.y, CAMERA.z);
       lookGoal.set(0, MODEL_Y - 0.1, 0);
+      position.set(CAMERA.x + pointer.x * PARALLAX.x + drift, CAMERA.y + pointer.y * PARALLAX.y, CAMERA.z);
+      position.sub(lookGoal).multiplyScalar(stepBack).add(lookGoal);
     }
     const speed = focus ? 3 : PARALLAX.smoothing;
     camera.position.lerp(position, 1 - Math.exp(-speed * delta));
@@ -195,20 +202,79 @@ export function Studio({
 }: Props) {
   const turn = useRef<Turn>({ rotation: new Quaternion(), lastTouched: 0 });
   const dragDistance = useRef(0);
+  // Fingers on the screen, and how far apart two of them were last time (0 when not pinching).
+  const touches = useRef(new Map<number, { x: number; y: number }>());
+  const pinchSpread = useRef(0);
   const focus = model?.parts.find((p) => p.id === selected) ?? null;
   // Zoom belongs to the part it was set on, so each newly selected part starts fitted to the view.
   const [zoomState, setZoomState] = useState({ part: "", zoom: 1 });
   const zoom = focus && zoomState.part === focus.id ? zoomState.zoom : 1;
   const seconds = () => performance.now() / 1000;
 
+  /** Scatter, or zoom on the selected part. A pinch (ctrl) with negative deltaY = apart. */
+  const scatterOrZoom = (deltaY: number, ctrlKey: boolean) => {
+    // Zooming already goes the right way; scattering flips so that apart = scatter.
+    if (focus) {
+      // From the latest zoom: a pinch calls this many times from one gesture's handler.
+      setZoomState((state) => {
+        const current = state.part === focus.id ? state.zoom : 1;
+        const next = MathUtils.clamp(current * Math.exp(-deltaY * ZOOM_SPEED), ZOOM_RANGE[0], ZOOM_RANGE[1]);
+        return { part: focus.id, zoom: next };
+      });
+    } else {
+      const amount = ctrlKey ? -deltaY : deltaY;
+      setExplode((v) => MathUtils.clamp(v + amount * SCATTER_SPEED, 0, 1));
+    }
+  };
+
+  const spread = () => {
+    const [a, b] = [...touches.current.values()];
+    return Math.hypot(a.x - b.x, a.y - b.y);
+  };
+
+  // A finger that lifts anywhere (even off the canvas) is no longer on the screen.
+  useEffect(() => {
+    const lift = (e: PointerEvent) => {
+      touches.current.delete(e.pointerId);
+      if (touches.current.size < 2) pinchSpread.current = 0;
+    };
+    window.addEventListener("pointerup", lift);
+    window.addEventListener("pointercancel", lift);
+    return () => {
+      window.removeEventListener("pointerup", lift);
+      window.removeEventListener("pointercancel", lift);
+    };
+  }, []);
+
   // Drag anywhere to turn the model (a hand grab-and-move arrives as a drag too).
+  // On a touchscreen, a second finger turns the drag into a pinch.
   const startTurn = (event: ReactPointerEvent) => {
     if (event.button !== 0) return;
+    if (event.pointerType === "touch") {
+      touches.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      if (touches.current.size === 2) {
+        pinchSpread.current = spread();
+        dragDistance.current = Infinity; // lifting from a pinch is never a tap on empty space
+      }
+      if (touches.current.size > 1) return; // the first finger's drag handles the pinch
+    }
     const start = { x: event.clientX, y: event.clientY };
     const last = { ...start };
     dragDistance.current = 0;
     const step = new Quaternion();
     const move = (e: PointerEvent) => {
+      if (touches.current.has(e.pointerId)) {
+        touches.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (touches.current.size >= 2) {
+          const now = spread();
+          scatterOrZoom(-(now - pinchSpread.current) * PINCH_SPEED, true);
+          pinchSpread.current = now;
+          // Keep up with this finger, so turning picks up again without a jump after the pinch.
+          if (e.pointerId === event.pointerId) Object.assign(last, { x: e.clientX, y: e.clientY });
+          return;
+        }
+      }
+      if (e.pointerId !== event.pointerId) return;
       dragDistance.current = Math.max(dragDistance.current, Math.hypot(e.clientX - start.x, e.clientY - start.y));
       // Sideways drags spin the model around the vertical axis, up/down drags tip it over,
       // both relative to the screen, so it keeps turning the same way whichever side is up.
@@ -220,12 +286,15 @@ export function Studio({
       last.y = e.clientY;
       turn.current.lastTouched = seconds();
     };
-    const up = () => {
+    const up = (e: PointerEvent) => {
+      if (e.pointerId !== event.pointerId) return;
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", up);
     };
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", up);
     turn.current.lastTouched = seconds();
   };
 
@@ -235,17 +304,8 @@ export function Studio({
       dpr={[1, 2]}
       camera={{ position: [CAMERA.x, CAMERA.y, CAMERA.z], fov: 42, near: 0.01, far: 120 }}
       onPointerDown={startTurn}
-      onWheel={(e) => {
-        // A pinch (both hands, or a trackpad) arrives as ctrl+wheel with negative = apart.
-        // Zooming already goes the right way; scattering flips so that apart = scatter.
-        if (focus) {
-          const next = MathUtils.clamp(zoom * Math.exp(-e.deltaY * ZOOM_SPEED), ZOOM_RANGE[0], ZOOM_RANGE[1]);
-          setZoomState({ part: focus.id, zoom: next });
-        } else {
-          const amount = e.ctrlKey ? -e.deltaY : e.deltaY;
-          setExplode((v) => MathUtils.clamp(v + amount * SCATTER_SPEED, 0, 1));
-        }
-      }}
+      // A pinch (both hands, or a trackpad) arrives as ctrl+wheel.
+      onWheel={(e) => scatterOrZoom(e.deltaY, e.ctrlKey)}
       onContextMenu={(e) => {
         e.preventDefault();
         setExplode((v) => (v < 0.5 ? 1 : 0));

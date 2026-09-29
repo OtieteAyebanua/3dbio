@@ -43,7 +43,7 @@ function HandStatus({ camera, hands }: { camera: CameraStatus; hands: number }) 
 
 export function Landing({ onChoose, camera, hands }: Props) {
   const [pointedAt, setPointedAt] = useState<Destination | null>(null);
-  const partCount = "800+";
+  const partCount = "590+";
 
   const card = (destination: Destination) => ({
     onClick: () => onChoose(destination),

@@ -39,23 +39,37 @@ export function PartInfo({ model, selected, explode, onClose }: Props) {
       )}
 
       <footer className="hints">
-        <span>
-          <b>Point</b> to explore
+        {/* Hand and mouse hints, or touch hints on a touchscreen (the CSS picks which). */}
+        <span className="hints-hand">
+          <span>
+            <b>Point</b> to explore
+          </span>
+          <span>
+            <b>Tap</b> middle finger to thumb to inspect a part
+          </span>
+          <span>
+            <b>Grab</b> and move to turn
+          </span>
+          <span>
+            <b>Four fingers</b> up/down to {part ? "zoom" : "scatter"}
+          </span>
+          <span>
+            <b>Ring finger</b> to thumb to scatter all
+          </span>
+          <span>
+            <b>Both hands</b> grab and pull apart to {part ? "zoom" : "scatter"}
+          </span>
         </span>
-        <span>
-          <b>Tap</b> middle finger to thumb to inspect a part
-        </span>
-        <span>
-          <b>Grab</b> and move to turn
-        </span>
-        <span>
-          <b>Four fingers</b> up/down to {part ? "zoom" : "scatter"}
-        </span>
-        <span>
-          <b>Ring finger</b> to thumb to scatter all
-        </span>
-        <span>
-          <b>Both hands</b> grab and pull apart to {part ? "zoom" : "scatter"}
+        <span className="hints-touch">
+          <span>
+            <b>Drag</b> to turn
+          </span>
+          <span>
+            <b>Tap</b> a part to inspect it
+          </span>
+          <span>
+            <b>Pinch</b> to {part ? "zoom" : "scatter"}
+          </span>
         </span>
       </footer>
     </>

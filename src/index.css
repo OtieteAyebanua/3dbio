@@ -10,10 +10,12 @@ body {
   overflow: hidden;
 }
 
-/* The 3D studio fills the window, behind everything else. */
+/* The 3D studio fills the window, behind everything else. It takes every drag and pinch itself,
+   so on a touchscreen the page never scrolls or zooms instead. */
 .studio {
   position: fixed !important;
   inset: 0;
+  touch-action: none;
 }
 
 /* Text over the 3D scene never blocks the hand or mouse from reaching the model. */
@@ -130,6 +132,22 @@ body {
   color: #5c554d;
   font-weight: 600;
 }
+/* Each set of hints lays out as if its lines were the footer's own. */
+.hints-hand,
+.hints-touch {
+  display: contents;
+}
+.hints-touch {
+  display: none;
+}
+@media (pointer: coarse) {
+  .hints-hand {
+    display: none;
+  }
+  .hints-touch {
+    display: contents;
+  }
+}
 
 .vignette {
   position: fixed;
@@ -138,10 +156,12 @@ body {
   background: radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(60, 50, 40, 0.18) 100%);
 }
 
-/* Only shown while the camera starts, or if it can't. */
+/* Only shown while the camera starts, or if it can't. Taps pass through to the page (touch and
+   the mouse still work without the camera); only its button takes them. */
 .message {
   position: fixed;
   inset: 0;
+  pointer-events: none;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -168,6 +188,7 @@ body {
   font: inherit;
   font-weight: 600;
   cursor: pointer;
+  pointer-events: auto;
 }
 
 /* Tracking reads from the video, so it must keep rendering — just invisibly. */
@@ -185,6 +206,7 @@ body {
   z-index: 1000;
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
   pointer-events: none;
 }
 
@@ -391,7 +413,7 @@ body {
 .model-picker button:focus {
   outline: none;
 }
-.model-picker-button {
+.model-picker .model-picker-button {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -430,6 +452,7 @@ body {
 }
 .model-picker li button {
   display: block;
+  font-size: 14px;
   width: 100%;
   padding: 11px 14px;
   border-radius: 10px;
@@ -483,8 +506,10 @@ body {
 }
 .landing-nav {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
+  gap: 10px;
   width: 100%;
   max-width: 1080px;
 }
@@ -566,7 +591,7 @@ body {
 }
 .landing-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
   gap: 28px;
   width: 100%;
   max-width: 1000px;
@@ -656,6 +681,7 @@ body {
 }
 .landing-meta {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   margin-top: 14px;
@@ -791,5 +817,218 @@ body {
   }
   100% {
     transform: translateX(250%);
+  }
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Tablets: everything a little closer to the edges. The back button moves under Home, clear of
+   the model's name and the guide. */
+@media (max-width: 1024px) {
+  .model-title {
+    top: 20px;
+    left: 20px;
+  }
+  .top-actions {
+    top: 80px;
+    left: 20px;
+  }
+  .guide {
+    top: 20px;
+    right: 20px;
+    width: min(300px, calc(100vw - 40px));
+  }
+  .part-card {
+    left: 20px;
+    bottom: 96px;
+  }
+  .hints {
+    gap: 4px 16px;
+    font-size: 0.8rem;
+  }
+  .back-button {
+    top: 132px;
+    left: 20px;
+    transform: none;
+  }
+  .back-button:hover,
+  .back-button[data-hand-hover] {
+    transform: scale(1.05);
+  }
+  .model-arrow.left {
+    left: 16px;
+  }
+  .model-arrow.right {
+    right: 16px;
+  }
+  .model-arrow svg {
+    width: 26px;
+    height: 26px;
+    padding: 16px;
+  }
+  .model-arrow span {
+    max-width: 90px;
+  }
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Phones, upright or on their side: the name, then Home and the list, then the guide (closed to
+   begin with, see GuidePanel) stack down the left; the back button sits at the bottom. */
+@media (max-width: 640px), (max-height: 480px) {
+  .model-title {
+    top: 12px;
+    left: 14px;
+    right: 14px;
+  }
+  .model-title h1 {
+    overflow: hidden;
+    font-size: 1rem;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .model-title p {
+    font-size: 0.72rem;
+  }
+  .top-actions {
+    top: 52px;
+    left: 14px;
+    right: 14px;
+    gap: 6px;
+    z-index: 30; /* the list opens over the guide */
+  }
+  .home-button,
+  .model-picker .model-picker-button {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  .model-picker .model-picker-button svg {
+    width: 13px;
+    height: 13px;
+  }
+  .model-picker ul {
+    min-width: min(220px, calc(100vw - 28px));
+    max-height: calc(100dvh - 120px);
+  }
+  .model-picker li button {
+    padding: 9px 12px;
+    font-size: 13px;
+  }
+  .guide {
+    top: 90px;
+    left: 14px;
+    right: 14px;
+    z-index: 20; /* over the arrows */
+    width: auto;
+    max-height: calc(100dvh - 90px - 96px);
+    border-radius: 14px;
+    font-size: 13px;
+  }
+  .guide.closed {
+    right: auto;
+    border-radius: 999px;
+  }
+  .guide header {
+    padding: 4px 6px 2px;
+  }
+  .guide.closed header {
+    padding: 2px;
+  }
+  .guide header button {
+    padding: 4px 10px;
+  }
+  .guide-toggle {
+    gap: 6px;
+    font-size: 12px;
+  }
+  .guide-dot {
+    width: 6px;
+    height: 6px;
+  }
+  .guide-voice {
+    font-size: 11px;
+  }
+  .guide-body {
+    padding: 0 14px 12px;
+  }
+  .guide h2 {
+    font-size: 15px;
+  }
+  /* The guide already explains the selected part. */
+  .part-card {
+    display: none;
+  }
+  .back-button {
+    top: auto;
+    bottom: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 7px 14px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .back-button:hover,
+  .back-button[data-hand-hover] {
+    transform: translateX(-50%) scale(1.05);
+  }
+  .hints {
+    bottom: 12px;
+    gap: 2px 12px;
+    padding: 0 14px;
+    font-size: 0.68rem;
+  }
+  /* Six hand gestures don't fit; a phone is used by touch anyway. */
+  .hints-hand {
+    display: none;
+  }
+  .hints-touch {
+    display: contents;
+  }
+  .model-arrow.left {
+    left: 6px;
+  }
+  .model-arrow.right {
+    right: 6px;
+  }
+  .model-arrow svg {
+    width: 16px;
+    height: 16px;
+    padding: 9px;
+  }
+  .model-arrow span {
+    display: none;
+  }
+}
+
+/* Landing page on a phone */
+@media (max-width: 640px) {
+  .landing {
+    padding: 16px 16px 28px;
+  }
+  .hand-status {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  .landing-kicker {
+    margin-bottom: 10px;
+    font-size: 11px;
+  }
+  .landing-lead {
+    font-size: 15px;
+  }
+  .landing-cards {
+    gap: 18px;
+  }
+  .landing-card {
+    border-radius: 22px;
+  }
+  .landing-text {
+    padding: 16px 18px 18px;
+  }
+  .landing-text h2 {
+    font-size: 21px;
+  }
+  .landing-gestures {
+    flex-direction: column;
+    gap: 10px;
+    font-size: 13px;
   }
 }
