@@ -26,5 +26,13 @@ dist-ssr
 # Secrets
 .env
 
-# Copied from node_modules by scripts/copy-mediapipe-wasm.mjs
+# Copied from node_modules by scripts/copy-wasm.mjs
 public/mediapipe/
+public/draco/
+
+# The source anatomy atlas (287 MB): models are exported from it into public/models
+assets/*.blend
+assets/*.glb
+
+# Python caches (from the Blender export scripts)
+__pycache__/

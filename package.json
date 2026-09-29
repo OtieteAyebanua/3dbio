@@ -1,5 +1,5 @@
 {
-  "name": "multihci",
+  "name": "view3d",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "postinstall": "node scripts/copy-mediapipe-wasm.mjs",
+    "postinstall": "node scripts/copy-wasm.mjs",
     "test": "vitest run"
   },
   "dependencies": {
