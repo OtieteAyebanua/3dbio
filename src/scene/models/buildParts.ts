@@ -6,6 +6,7 @@
  * group still splits into the objects inside it. The model is resized and centred to fit.
  */
 import { Box3, Mesh, Object3D, Sphere, Vector3, type Material } from "three";
+import { clone as cloneWithRig } from "three/addons/utils/SkeletonUtils.js";
 import type { ModelPart, PartModel, Vec3 } from "./types";
 
 /** The model is scaled so its largest side is this many metres. */
@@ -19,10 +20,11 @@ const EXPLODE_FRACTION = 0.38;
 const MAX_DOWNWARD = -0.25;
 const MAX_UPWARD = 0.5;
 
-/** "Left_Ventricle.001" → "Left Ventricle" */
+/** "Left_Ventricle.001" → "Left Ventricle" (three.js may already have made that "Left_Ventricle001") */
 export function prettyName(raw: string, index: number): string {
   const cleaned = raw
     .replace(/\.\d+$/, "")
+    .replace(/(\D)\d{3}$/, "$1")
     .replace(/[_-]+/g, " ")
     .replace(/([a-z])([A-Z])/g, "$1 $2")
     .trim();
@@ -30,15 +32,29 @@ export function prettyName(raw: string, index: number): string {
   return cleaned.replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-/** The objects that count as the model's parts. */
+/** Whether an object (or anything inside it) has something to see. */
+function hasMesh(object: Object3D): boolean {
+  let found = false;
+  object.traverse((child) => {
+    if (child instanceof Mesh) found = true;
+  });
+  return found;
+}
+
+/** The objects that count as the model's parts (empty ones, like markers, are skipped). */
 function findParts(root: Object3D): Object3D[] {
   let node = root;
   while (node.children.length === 1) node = node.children[0];
-  return node.children.length ? node.children : [node];
+  const parts = node.children.filter(hasMesh);
+  return parts.length ? parts : [node];
 }
 
-export function buildPartModel(scene: Object3D, name: string): PartModel {
-  const source = scene.clone(true);
+/**
+ * `labels` gives friendlier names for parts, by object name (otherwise names are tidied up).
+ */
+export function buildPartModel(scene: Object3D, name: string, labels: Record<string, string> = {}): PartModel {
+  // Our own copy (rig-aware, so animated parts like a robot arm stay attached to their bones).
+  const source = cloneWithRig(scene);
   source.updateMatrixWorld(true);
 
   // Fit: scale so the model's largest side is FIT_SIZE, centred on the origin.
@@ -50,8 +66,11 @@ export function buildPartModel(scene: Object3D, name: string): PartModel {
   const parts: ModelPart[] = findParts(source).map((original, index) => {
     // Bake the part's full transform (including its parents') and the fit into a wrapper,
     // so every part sits exactly where it was in the model, just resized and centred.
-    const object = original.clone(true);
-    original.matrixWorld.decompose(object.position, object.quaternion, object.scale);
+    // The copy is ours, so the part can be moved straight into its wrapper (no second copy,
+    // which would break rigged parts).
+    const object = original;
+    const world = original.matrixWorld.clone();
+    world.decompose(object.position, object.quaternion, object.scale);
     const fitted = new Object3D();
     fitted.add(object);
     fitted.scale.setScalar(scale);
@@ -84,7 +103,7 @@ export function buildPartModel(scene: Object3D, name: string): PartModel {
 
     return {
       id: `${index}-${original.name || "part"}`,
-      name: prettyName(original.name, index),
+      name: labels[original.name] ?? prettyName(original.name, index),
       object: fitted,
       center: center.toArray() as Vec3,
       radius: bounds.getBoundingSphere(new Sphere()).radius,

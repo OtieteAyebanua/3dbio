@@ -16,9 +16,20 @@
  */
 import { ContactShadows, useGLTF } from "@react-three/drei";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Component, Suspense, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from "react";
+import {
+  Component,
+  Suspense,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import { MathUtils, Quaternion, Vector3, type PerspectiveCamera } from "three";
 import { ExplodedModel, MODEL_Y, type Turn } from "./ExplodedModel";
+import { ModelLoader } from "./ModelLoader";
 import { buildPartModel } from "./models/buildParts";
 import type { ModelPart, PartModel } from "./models/types";
 
@@ -28,6 +39,9 @@ const FLOOR = "#ebe6de";
 const RING = "#dcd5ca";
 const PEDESTAL = "#f3f0ea";
 const RING_RADII = [2.4, 3.6, 5.2, 7.2, 9.8, 13, 17, 22];
+
+/** The decoder for compressed (Draco) models, served by the app itself (copied there by scripts/copy-wasm.mjs). */
+const DRACO_DECODER = `${import.meta.env.BASE_URL}draco/`;
 
 /** How far the view leans towards the pointer, and how quickly it follows. */
 const PARALLAX = { x: 0.3, y: 0.15, smoothing: 2 };
@@ -88,7 +102,7 @@ function CameraRig({ focus, zoom }: { focus: ModelPart | null; zoom: number }) {
       holder.localToWorld(lookGoal);
       // Far enough back that the whole part fits in view, then zoomed.
       const halfFov = MathUtils.degToRad((camera as PerspectiveCamera).fov / 2);
-      const distance = (Math.max(focus.radius, MIN_FOCUS_RADIUS) / Math.sin(halfFov)) * 1.25 / zoom;
+      const distance = ((Math.max(focus.radius, MIN_FOCUS_RADIUS) / Math.sin(halfFov)) * 1.25) / zoom;
       position.copy(FOCUS_VIEW).multiplyScalar(distance).add(lookGoal);
       position.x += pointer.x * distance * 0.08;
       position.y += pointer.y * distance * 0.04;
@@ -109,11 +123,13 @@ function CameraRig({ focus, zoom }: { focus: ModelPart | null; zoom: number }) {
 function LoadedModel({
   url,
   name,
+  labels,
   onLoaded,
   ...view
 }: {
   url: string;
   name: string;
+  labels?: Record<string, string>;
   onLoaded: (model: PartModel) => void;
   explode: number;
   hovered: string | null;
@@ -122,14 +138,17 @@ function LoadedModel({
   onSelect: (id: string | null) => void;
   turn: RefObject<Turn>;
 }) {
-  const { scene } = useGLTF(url);
-  const model = useMemo(() => buildPartModel(scene, name), [scene, name]);
+  const { scene } = useGLTF(url, DRACO_DECODER);
+  const model = useMemo(() => buildPartModel(scene, name, labels), [scene, name, labels]);
   useEffect(() => onLoaded(model), [model, onLoaded]);
   return <ExplodedModel model={model} {...view} />;
 }
 
 /** Catches a model that fails to load (missing or broken file) instead of crashing the page. */
-class ModelErrorBoundary extends Component<{ onError: (message: string) => void; children: ReactNode }, { failed: boolean }> {
+class ModelErrorBoundary extends Component<
+  { onError: (message: string) => void; children: ReactNode },
+  { failed: boolean }
+> {
   state = { failed: false };
   static getDerivedStateFromError() {
     return { failed: true };
@@ -146,6 +165,8 @@ interface Props {
   /** Address of the model file (.glb) to show. */
   modelUrl: string;
   modelName: string;
+  /** Friendlier names for the model's parts (see collections.ts). */
+  modelLabels?: Record<string, string>;
   /** The model once it has loaded (to find the selected part to zoom in on). */
   model: PartModel | null;
   onModelLoaded: (model: PartModel) => void;
@@ -161,6 +182,7 @@ interface Props {
 export function Studio({
   modelUrl,
   modelName,
+  modelLabels,
   model,
   onModelLoaded,
   onModelError,
@@ -246,10 +268,11 @@ export function Studio({
       <Floor />
       {/* A new file gets a fresh boundary (key), so one bad file doesn't block the next */}
       <ModelErrorBoundary key={modelUrl} onError={onModelError}>
-        <Suspense fallback={null}>
+        <Suspense fallback={<ModelLoader position={[0, MODEL_Y, 0]} />}>
           <LoadedModel
             url={modelUrl}
             name={modelName}
+            labels={modelLabels}
             onLoaded={onModelLoaded}
             explode={explode}
             hovered={hovered}

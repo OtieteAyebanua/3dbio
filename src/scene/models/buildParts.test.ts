@@ -25,6 +25,7 @@ describe("prettyName", () => {
     expect(prettyName("Left_Ventricle.001", 0)).toBe("Left Ventricle");
     expect(prettyName("rightAtrium", 0)).toBe("Right Atrium");
     expect(prettyName("", 2)).toBe("Part 3");
+    expect(prettyName("arm001", 0)).toBe("Arm"); // three.js drops the dot from "arm.001"
   });
 });
 
@@ -58,5 +59,14 @@ describe("buildPartModel", () => {
   it("gives every part its own materials", () => {
     const [a, b] = model.parts.map((p) => (p.object.children[0] as Mesh).material);
     expect(a).not.toBe(b);
+  });
+});
+
+describe("buildPartModel labels and empty objects", () => {
+  it("uses friendly labels, and skips objects with nothing to see", () => {
+    const root = new Group();
+    root.add(mesh("rtg", [0, 0, 0]), mesh("antenna_hg", [20, 0, 0]), new Group());
+    const model = buildPartModel(root, "Rover", { rtg: "RTG power source" });
+    expect(model.parts.map((p) => p.name)).toEqual(["RTG power source", "Antenna Hg"]);
   });
 });
