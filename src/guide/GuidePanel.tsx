@@ -20,7 +20,7 @@ function spoken(e: Explanation): string {
 export function GuidePanel({ model, selected }: Props) {
   const part = model.parts.find((p) => p.id === selected) ?? null;
   const partNames = useMemo(() => model.parts.map((p) => p.name), [model]);
-  const state = useExplanation(model.name, part?.name ?? null, partNames);
+  const [state, retry] = useExplanation(model.name, part?.name ?? null, partNames);
   const [open, setOpen] = useState(true);
   const [voice, setVoice] = useState(false);
 
@@ -59,6 +59,9 @@ export function GuidePanel({ model, selected }: Props) {
             <>
               <h2>{subject}</h2>
               <p className="guide-error">The guide couldn't answer: {state.message}</p>
+              <button className="guide-retry" onClick={retry}>
+                Try again
+              </button>
             </>
           )}
           {explanation && (

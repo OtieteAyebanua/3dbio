@@ -37,8 +37,11 @@ function fetchExplanation(model: string, part: string | null, parts: string[]): 
   return answer;
 }
 
-/** The explanation of `part` of `model` (or of the whole model when `part` is null). */
-export function useExplanation(model: string, part: string | null, parts: string[]): ExplanationState {
+/**
+ * The explanation of `part` of `model` (or of the whole model when `part` is null), and a
+ * way to ask again after a failure.
+ */
+export function useExplanation(model: string, part: string | null, parts: string[]): [ExplanationState, () => void] {
   const key = `${model}\n${part ?? ""}`;
   const [results, setResults] = useState<Record<string, ExplanationState>>({});
 
@@ -55,5 +58,11 @@ export function useExplanation(model: string, part: string | null, parts: string
     };
   }, [key, model, part, parts, results]);
 
-  return results[key] ?? { status: "loading" };
+  const retry = () =>
+    setResults((r) => {
+      const rest = { ...r };
+      delete rest[key];
+      return rest;
+    });
+  return [results[key] ?? { status: "loading" }, retry];
 }

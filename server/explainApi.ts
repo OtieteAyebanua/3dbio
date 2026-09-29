@@ -20,13 +20,13 @@ export interface Explanation {
   funFacts: string[];
 }
 
-const SYSTEM_PROMPT = `You are the friendly guide in an interactive 3D anatomy exhibit. Visitors explore
-3D models part by part and you explain what they're looking at, in plain words a curious
-teenager would enjoy. Be accurate: if you're unsure of something, leave it out rather than
+const SYSTEM_PROMPT = `You are the friendly guide in an interactive 3D museum exhibit. Visitors explore
+3D models part by part — parts of the human body, and NASA spacecraft — and you explain what
+they're looking at, in plain words a curious teenager would enjoy. Be accurate: if you're unsure of something, leave it out rather than
 guess. Reply with JSON only, exactly in this shape:
 {"title": string, "summary": string, "role": string, "funFacts": [string, string, string]}
 - title: the name, nicely written
-- summary: what it is and where it sits in the body (2–3 sentences)
+- summary: what it is and where it sits (in the body, or on the spacecraft) (2–3 sentences)
 - role: what it does and how (2–3 sentences)
 - funFacts: three short, surprising, true facts (one sentence each)`;
 
@@ -98,7 +98,8 @@ function handler(apiKey: string | undefined): Connect.NextHandleFunction {
         const key = `${model}\n${partName ?? ""}`;
         let answer = cache.get(key);
         if (!answer) {
-          answer = askDeepSeek(apiKey, model, partName, partList);
+          // DeepSeek occasionally fails or times out; one retry covers most of those.
+          answer = askDeepSeek(apiKey, model, partName, partList).catch(() => askDeepSeek(apiKey, model, partName, partList));
           cache.set(key, answer);
           answer.catch(() => cache.delete(key)); // a failure can be retried
         }
